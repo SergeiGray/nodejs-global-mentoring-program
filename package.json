@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "task_1.1": "nodemon --exec babel-node src/task_1.1.js",
+    "task_1.2": "nodemon --exec babel-node src/task_1.2.js"
   },
   "repository": {
     "type": "git",
@@ -18,6 +19,12 @@
   },
   "homepage": "https://github.com/SergeiGray/nodejs-global-mentoring-program#readme",
   "devDependencies": {
+    "@babel/core": "^7.15.8",
+    "@babel/node": "^7.15.8",
+    "@babel/preset-env": "^7.15.8",
     "nodemon": "^2.0.13"
+  },
+  "dependencies": {
+    "csvtojson": "^2.0.10"
   }
 }
