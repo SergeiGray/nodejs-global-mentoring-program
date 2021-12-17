@@ -1,6 +1,7 @@
 import Joi from "joi";
+import {GROUP_PERMISSIONS} from "../constants/constants";
 
-export const validationSchemeForNewUser = Joi.object({
+export const validationSchemeForUser = Joi.object({
     login: Joi.string()
         .required(),
     password: Joi.string()
@@ -10,4 +11,10 @@ export const validationSchemeForNewUser = Joi.object({
         .min(4)
         .max(130)
         .required(),
+});
+
+export const validationSchemeForGroup = Joi.object({
+    name: Joi.string()
+        .required(),
+    permission: Joi.array().min(1).items(Joi.string().valid(...GROUP_PERMISSIONS)),
 });
