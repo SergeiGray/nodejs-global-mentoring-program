@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "task_2": "nodemon --exec babel-node src/task_2.js"
+    "dev": "nodemon -r dotenv/config --exec babel-node src/app.js"
   },
   "repository": {
     "type": "git",
@@ -30,9 +30,13 @@
   },
   "dependencies": {
     "csvtojson": "^2.0.10",
+    "dotenv": "^10.0.0",
     "express": "^4.17.1",
     "joi": "^17.4.2",
     "multer": "^1.4.3",
+    "pg": "^8.7.1",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.9.0",
     "uuid": "^8.3.2"
   }
 }
