@@ -1,28 +1,30 @@
-import {Op} from "sequelize";
+import sequelize, {Op} from "sequelize";
 import {v4 as uuidv4} from "uuid";
-import {connectToDatabase} from "../utils/utils";
+import {modelDefinition} from "../utils/utils";
 import connection from "./dataBaseConnection";
 import {User} from "../models/User";
-import {validationSchemeForNewUser} from "../utils/validation";
+import {validationSchemeForUser} from "../utils/validation";
+import {deleteUserGroupRelationshipBy} from "./userGroupServices";
 
 
-const UsersDB = connectToDatabase(connection, 'User', User);
+export const UsersTable = modelDefinition(connection, 'User', User);
 
 export const getUserData = async (uid, password) => {
     try {
-        return await UsersDB.findOne({ where: { uid: uid, password: password, isDeleted: false }});
+        return await UsersTable.findOne({ where: { uid: uid, password: password, isDeleted: false }});
     }
-    catch {
+    catch (e) {
+        console.log('ERROR', e)
         return false;
     }
 };
 
 export const getUsersData = async (uid, password, data) => {
     try {
-        const result = await UsersDB.findOne({ where: { uid: uid, password: password, isDeleted: false }});
+        const result = await UsersTable.findOne({ where: { uid: uid, password: password, isDeleted: false }});
 
         if (result) {
-            const users = await UsersDB.findAll({
+            const users = await UsersTable.findAll({
                 where: {
                     login: {
                         [Op.substring]: data.loginSubstring,
@@ -34,18 +36,19 @@ export const getUsersData = async (uid, password, data) => {
             return users?.sort().splice(0, data.limit);
         }
     }
-    catch {
+    catch (e) {
+        console.log('ERROR', e)
         return false;
     }
 };
 
 export const createUser = async (data) => {
-    const { error } = validationSchemeForNewUser.validate(data);
+    const { error } = validationSchemeForUser.validate(data);
 
     if (error) return false;
 
     try {
-        const result = await UsersDB.create(
+        const result = await UsersTable.create(
             {
                 uid: uuidv4(),
                 login: data.login,
@@ -55,19 +58,20 @@ export const createUser = async (data) => {
 
         return !!result;
     }
-    catch {
+    catch (e) {
+        console.log('ERROR', e)
         return false;
     }
 
 };
 
 export const updateUserData = async (uid, password, data) => {
-    const { error } = validationSchemeForNewUser.validate(data);
+    const { error } = validationSchemeForUser.validate(data);
 
     if (error) return false;
 
     try {
-        const [result] = await UsersDB.update(
+        const [result] = await UsersTable.update(
             {
                 login: data.login,
                 password: data.password,
@@ -76,18 +80,21 @@ export const updateUserData = async (uid, password, data) => {
 
         return !!result;
     }
-    catch {
+    catch (e) {
+        console.log('ERROR', e)
         return false;
     }
 };
 
 export const deleteUser = async (uid = '', password = '') => {
     try {
-        const [ result ] = await UsersDB.update({ isDeleted: true }, { where: { uid: uid, password: password, isDeleted: false }});
+        await UsersTable.update({ isDeleted: true }, { where: { uid: uid, password: password, isDeleted: false }});
+        await deleteUserGroupRelationshipBy('user', uid);
 
-        return !!result;
+        return true;
     }
-    catch {
+    catch (e) {
+        console.log('ERROR', e)
         return false;
     }
 };

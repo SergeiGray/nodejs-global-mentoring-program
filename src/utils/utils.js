@@ -1,8 +1,8 @@
-export const connectToDatabase = (connection, modelName, model) => {
+export const modelDefinition = (connection, modelName, model) => {
     if (connection && connection.define) {
         const Model = connection.define(modelName, model, {timestamps: false});
 
-        Model.sync({ alter: true });
+        Model.sync({ force: true });
 
         return Model;
     }
