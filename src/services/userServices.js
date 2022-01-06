@@ -1,100 +1,141 @@
-import sequelize, {Op} from "sequelize";
+import {Op} from "sequelize";
 import {v4 as uuidv4} from "uuid";
 import {modelDefinition} from "../utils/utils";
 import connection from "./dataBaseConnection";
 import {User} from "../models/User";
 import {validationSchemeForUser} from "../utils/validation";
 import {deleteUserGroupRelationshipBy} from "./userGroupServices";
-
+import {loggingOfMethodUsed} from "../utils/logging";
+import {EVENT_MESSAGES} from "../constants/constants";
 
 export const UsersTable = modelDefinition(connection, 'User', User);
 
-export const getUserData = async (uid, password) => {
+export const getUserData = (uid, password) => {
     try {
-        return await UsersTable.findOne({ where: { uid: uid, password: password, isDeleted: false }});
-    }
-    catch (e) {
-        console.log('ERROR', e)
-        return false;
-    }
-};
+        loggingOfMethodUsed('info','getUserData', [uid, password]);
 
-export const getUsersData = async (uid, password, data) => {
-    try {
-        const result = await UsersTable.findOne({ where: { uid: uid, password: password, isDeleted: false }});
-
-        if (result) {
-            const users = await UsersTable.findAll({
+        return UsersTable
+            .findOne({
                 where: {
-                    login: {
-                        [Op.substring]: data.loginSubstring,
-                    },
-                    isDeleted: false
+                    uid: uid,
+                    password: password,
+                    isDeleted: false,
                 }
             });
-
-            return users?.sort().splice(0, data.limit);
-        }
-    }
-    catch (e) {
-        console.log('ERROR', e)
-        return false;
+    } catch (e) {
+        loggingOfMethodUsed('error', 'getUserData', [uid, password], e.toString());
     }
 };
 
-export const createUser = async (data) => {
-    const { error } = validationSchemeForUser.validate(data);
-
-    if (error) return false;
-
+export const getUsersData = (uid, password, {loginSubstring, limit}) => {
     try {
-        const result = await UsersTable.create(
-            {
-                uid: uuidv4(),
-                login: data.login,
-                password: data.password,
-                age: data.age,
+        loggingOfMethodUsed('info','getUsersData', [uid, password, loginSubstring, limit]);
+
+        return UsersTable
+            .findOne({
+                where: {
+                    uid: uid,
+                    password: password,
+                    isDeleted: false
+                }
+            })
+            .then((result) => {
+                if(result) {
+                    return UsersTable.findAll({
+                        where: {
+                            login: {
+                                [Op.substring]: loginSubstring,
+                            },
+                            isDeleted: false
+                        }
+                    });
+                }
+
+                throw new Error(EVENT_MESSAGES.updateError);
             });
-
-        return !!result;
-    }
-    catch (e) {
-        console.log('ERROR', e)
-        return false;
-    }
-
-};
-
-export const updateUserData = async (uid, password, data) => {
-    const { error } = validationSchemeForUser.validate(data);
-
-    if (error) return false;
-
-    try {
-        const [result] = await UsersTable.update(
-            {
-                login: data.login,
-                password: data.password,
-                age: data.age,
-            }, {where: {uid: uid, password: password, isDeleted: false}});
-
-        return !!result;
-    }
-    catch (e) {
-        console.log('ERROR', e)
-        return false;
+    } catch (e) {
+        loggingOfMethodUsed('error', 'getUsersData', [uid, password, loginSubstring, limit], e.toString());
     }
 };
 
-export const deleteUser = async (uid = '', password = '') => {
+export const createUser = ({login, password, age}) => {
     try {
-        await UsersTable.update({ isDeleted: true }, { where: { uid: uid, password: password, isDeleted: false }});
-        await deleteUserGroupRelationshipBy('user', uid);
+        loggingOfMethodUsed('info', 'createUser', [login, password, age]);
 
-        return true;
+        const { error } = validationSchemeForUser.validate({login, password, age});
+
+        if (error) {
+            throw error;
+        } else {
+            return UsersTable.create(
+                {
+                    uid: uuidv4(),
+                    login: login,
+                    password: password,
+                    age: age,
+                });
+        }
+    } catch (e) {
+        loggingOfMethodUsed('error', 'createUser', [login, password, age], e.toString());
     }
-    catch (e) {
-        console.log('ERROR', e)
-        return false;
+};
+
+export const updateUserData = (uid, currentPassword, {login, password, age}) => {
+    try {
+        loggingOfMethodUsed('info', 'updateUserData', [uid, currentPassword, login, password, age]);
+
+        const { error } = validationSchemeForUser.validate({login, password, age});
+
+        if (error) {
+            throw error;
+        } else {
+            return UsersTable
+                .update({
+                    login: login,
+                    password: password,
+                    age: age
+                }, {
+                    where: {
+                        uid: uid,
+                        password: currentPassword,
+                        isDeleted: false
+                    }
+                })
+                .then(([result]) => {
+                    if(result) {
+                        return true;
+                    }
+
+                    throw new Error(EVENT_MESSAGES.updateError);
+                });
+        }
+    } catch (e) {
+        loggingOfMethodUsed('error', 'updateUserData', [uid, currentPassword, login, password, age], e.toString());
+    }
+};
+
+export const deleteUser = (uid = '', password = '') => {
+    try {
+        loggingOfMethodUsed('info', 'deleteUser', [uid, password]);
+
+        return UsersTable
+            .update({
+                isDeleted: true
+            }, {
+                where: {
+                    uid: uid,
+                    password: password,
+                    isDeleted: false
+                }
+            })
+            .then((result) => {
+                if(result) {
+                    return deleteUserGroupRelationshipBy('user', uid);
+                }
+
+                throw new Error(EVENT_MESSAGES.updateError);
+            });
+    } catch (e) {
+        loggingOfMethodUsed('error', 'deleteUser', [uid, password], e.toString());
     }
 };

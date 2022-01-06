@@ -4,81 +4,88 @@ import connection from "./dataBaseConnection";
 import {Group} from "../models/Group";
 import {validationSchemeForGroup} from "../utils/validation";
 import {deleteUserGroupRelationshipBy} from "./userGroupServices";
-
+import {loggingOfMethodUsed} from "../utils/logging";
+import {EVENT_MESSAGES} from "../constants/constants";
 
 export const GroupsTable = modelDefinition(connection, 'Group', Group);
 
-export const getGroupById = async (gid) => {
+export const getGroupById = (gid) => {
     try {
-        return await GroupsTable.findOne({ where: { gid: gid}});
-    }
-    catch (e) {
-        console.log('ERROR', e)
-        return false;
+        loggingOfMethodUsed('info','getGroupById', [gid]);
+
+        return GroupsTable.findOne({ where: { gid: gid}});
+    } catch (e) {
+        loggingOfMethodUsed('error', 'getGroupById', [gid], e.toString());
     }
 };
 
-export const getGroups = async () => {
+export const getGroups = () => {
     try {
-        return await GroupsTable.findAll();
-    }
-    catch (e) {
-        console.log('ERROR', e)
-        return false;
+        loggingOfMethodUsed('info','getGroups', []);
+
+        return GroupsTable.findAll();
+    } catch (e) {
+        loggingOfMethodUsed('error', 'getGroups', [], e.toString());
     }
 };
 
-export const createGroup = async (data) => {
-    const { error } = validationSchemeForGroup.validate(data);
-
-    if (error) return false;
-
+export const createGroup = (name, permission) => {
     try {
-        const result = await GroupsTable.create(
-            {
-                gid: uuidv4(),
-                name: data.name,
-                permission: data.permission,
-            });
+        loggingOfMethodUsed('info','createGroup', [name, permission]);
 
-        return !!result;
-    }
-    catch (e) {
-        console.log('ERROR', e)
-        return false;
-    }
+        const { error } = validationSchemeForGroup.validate({name, permission});
 
+        if (error) {
+            throw error;
+        } else {
+            return GroupsTable.create(
+                {
+                    gid: uuidv4(),
+                    name: name,
+                    permission: permission,
+                });
+        }
+    } catch (e) {
+        loggingOfMethodUsed('error', 'createGroup', [name, permission], e.toString());
+    }
 };
 
-export const updateGroup = async (gid, data) => {
-    const { error } = validationSchemeForGroup.validate(data);
-
-    if (error) return false;
-
+export const updateGroup = (gid, name, permission) => {
     try {
-        const [result] = await GroupsTable.update(
-            {
-                name: data.name,
-                permission: data.permission,
-            }, {where: {gid: gid}});
-        console.log('LOG', result)
-        return !!result;
-    }
-    catch (e) {
-        console.log('ERROR', e)
-        return false;
+        loggingOfMethodUsed('info','updateGroup', [name, permission]);
+
+        const { error } = validationSchemeForGroup.validate({name, permission});
+
+        if (error) {
+            throw error;
+        } else {
+            return GroupsTable.update(
+                {
+                    name: name,
+                    permission: permission,
+                }, {where: {gid: gid}});
+        }
+    } catch (e) {
+        loggingOfMethodUsed('error', 'updateGroup', [name, permission], e.toString());
     }
 };
 
 export const deleteGroup = async (gid = '') => {
     try {
-        await GroupsTable.destroy({where: {gid: gid}});
-        await deleteUserGroupRelationshipBy('group', gid);
+        loggingOfMethodUsed('info','deleteGroup', [gid]);
 
-        return true;
-    }
-    catch (e) {
-        console.log('ERROR', e)
-        return false;
+        return GroupsTable
+            .destroy({
+                where: {gid: gid}
+            })
+            .then((result) => {
+                if(result) {
+                    return deleteUserGroupRelationshipBy('group', gid);
+                }
+
+                throw new Error(EVENT_MESSAGES.updateError);
+            });
+    } catch (e) {
+        loggingOfMethodUsed('error', 'deleteGroup', [gid], e.toString());
     }
 };

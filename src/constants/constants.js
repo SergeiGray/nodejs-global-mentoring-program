@@ -19,6 +19,7 @@ export const EVENT_MESSAGES = {
     userDeleted: 'User deleted',
     userNotFound: 'User not found',
 
+    groupsFound: 'Groups found',
     groupCreationError: 'Error in the operation of creating a new group',
     groupCreated: 'A new group has been created',
     groupDeleted: 'Group deleted',
