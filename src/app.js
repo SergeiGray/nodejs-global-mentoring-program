@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import expressWinston from "express-winston";
 import morgan from "morgan";
 import router from "./routers/routers";
@@ -18,6 +19,7 @@ process.on('uncaughtException', (error) => {
 });
 
 app.use(morgan("combined", { stream: logger.stream }));
+app.use(cors());
 app.use(router);
 app.use(expressWinston.errorLogger({
     winstonInstance: logger,

@@ -5,9 +5,17 @@ import {
     HEADERS_OF_THE_GROUP_OPERATIONS_REQUEST,
     HEADERS_OF_THE_USER_OPERATIONS_REQUEST
 } from "../constants/constants";
-import {createUser, deleteUser, getUserData, getUsersData, updateUserData} from "../services/userServices";
+import {
+    createUser,
+    deleteUser,
+    getUserData,
+    getUsersData,
+    identifyUser,
+    updateUserData
+} from "../services/userServices";
 import {createGroup, deleteGroup, getGroupById, getGroups, updateGroup} from "../services/groupServices";
 import {addUsersToGroup} from "../services/userGroupServices";
+import {auth} from "../utils/auth";
 
 const router = express.Router()
 const upload = multer();
@@ -16,7 +24,7 @@ const headersOfUser = HEADERS_OF_THE_USER_OPERATIONS_REQUEST;
 const headersOfGroup = HEADERS_OF_THE_GROUP_OPERATIONS_REQUEST;
 
 router.route('/user')
-    .get(async (req, res, next) => {
+    .get(auth, async (req, res, next) => {
         try {
             const {[headersOfUser.uid]: uid, [headersOfUser.password]: password} = req.headers;
             const result = await getUserData(uid, password);
@@ -38,7 +46,7 @@ router.route('/user')
             next(err)
         }
     })
-    .patch(upload.none(), async (req, res, next) => {
+    .patch(upload.none(), auth, async (req, res, next) => {
         try {
             const {[headersOfUser.uid]: uid, [headersOfUser.password]: password} = req.headers;
             const data = req.body;
@@ -50,7 +58,7 @@ router.route('/user')
             next(err)
         }
     })
-    .delete(async (req, res, next) => {
+    .delete(auth, async (req, res, next) => {
         try {
             const {[headersOfUser.uid]: uid, [headersOfUser.password]: password} = req.headers;
             const result = await deleteUser(uid, password);
@@ -63,7 +71,7 @@ router.route('/user')
     })
 
 router.route('/users')
-    .get(async (req, res, next) => {
+    .get(auth, async (req, res, next) => {
         try {
             const {[headersOfUser.uid]: uid, [headersOfUser.password]: password} = req.headers;
             const data = req.query;
@@ -75,7 +83,7 @@ router.route('/users')
             next(err)
         }
     })
-    .post(upload.none(), async (req, res, next) => {
+    .post(upload.none(), auth, async (req, res, next) => {
         try {
             const data = req.body;
             const result = await addUsersToGroup(data.gid, data.uids);
@@ -88,7 +96,7 @@ router.route('/users')
     })
 
 router.route('/group')
-    .get(async (req, res, next) => {
+    .get(auth, async (req, res, next) => {
         try {
             const {[headersOfGroup.gid]: gid} = req.headers;
             const result = await getGroupById(gid);
@@ -99,7 +107,7 @@ router.route('/group')
             next(err)
         }
     })
-    .post(upload.none(), async (req, res, next) => {
+    .post(upload.none(), auth, async (req, res, next) => {
         try {
             const {name, permission} = req.body;
             const result = await createGroup(name, permission);
@@ -110,7 +118,7 @@ router.route('/group')
             next(err)
         }
     })
-    .patch(upload.none(), async (req, res, next) => {
+    .patch(upload.none(), auth, async (req, res, next) => {
         try {
             const {[headersOfGroup.gid]: gid} = req.headers;
             const {name, permission} = req.body;
@@ -122,7 +130,7 @@ router.route('/group')
             next(err)
         }
     })
-    .delete(async (req, res, next) => {
+    .delete(auth, async (req, res, next) => {
         try {
             const {[headersOfGroup.gid]: gid} = req.headers;
             const result = await deleteGroup(gid);
@@ -135,12 +143,24 @@ router.route('/group')
     })
 
 router.route('/groups')
-    .get(async (req, res, next) => {
+    .get(auth, async (req, res, next) => {
         try {
             const result = await getGroups();
             const message = result ? `${EVENT_MESSAGES.groupsFound} - ${result?.length}` : EVENT_MESSAGES.searchError;
 
             res.send(message)
+        } catch (err) {
+            next(err)
+        }
+    })
+
+router.route('/auth')
+    .post(upload.none(), async (req, res, next) => {
+        try {
+            const data = req.body;
+            const token = await identifyUser(data);
+
+            res.send(token)
         } catch (err) {
             next(err)
         }

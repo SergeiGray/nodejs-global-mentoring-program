@@ -27,6 +27,8 @@ export const EVENT_MESSAGES = {
 
     addUsersToGroupError: 'Error adding users to a group',
     addUsersToGroup: 'Users have been successfully added to the group',
+
+    authError: 'Authorization error',
 }
 
 export const GROUP_PERMISSIONS = [

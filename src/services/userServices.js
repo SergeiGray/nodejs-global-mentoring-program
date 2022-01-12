@@ -7,6 +7,7 @@ import {validationSchemeForUser} from "../utils/validation";
 import {deleteUserGroupRelationshipBy} from "./userGroupServices";
 import {loggingOfMethodUsed} from "../utils/logging";
 import {EVENT_MESSAGES} from "../constants/constants";
+import {getToken} from "../utils/auth";
 
 export const UsersTable = modelDefinition(connection, 'User', User);
 
@@ -137,5 +138,29 @@ export const deleteUser = (uid = '', password = '') => {
             });
     } catch (e) {
         loggingOfMethodUsed('error', 'deleteUser', [uid, password], e.toString());
+    }
+};
+
+export const identifyUser = ({login, password}) => {
+    try {
+        loggingOfMethodUsed('info', 'identifyUser', [login, password]);
+
+        return UsersTable
+            .findOne({
+                where: {
+                    login: login,
+                    password: password,
+                    isDeleted: false
+                }
+            })
+            .then((result) => {
+                if(result) {
+                    return getToken(result.uid, result.login, result.password);
+                }
+
+                throw new Error(EVENT_MESSAGES.authError);
+            });
+    } catch (e) {
+        loggingOfMethodUsed('error', 'identifyUser', [login, password], e.toString());
     }
 };
